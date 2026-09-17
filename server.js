@@ -138,6 +138,7 @@ function runJob(jobId) {
           : `bestvideo[height<=${job.quality}]+bestaudio/best[height<=${job.quality}]`,
         '--merge-output-format', 'mp4',
         '--ignore-config',
+        '--extractor-retries', '3',
         ...COOKIES_ARGS,
         '--add-metadata',
         '--newline',
@@ -149,6 +150,7 @@ function runJob(jobId) {
         '-x', '--audio-format', 'mp3',
         '--audio-quality', job.quality + 'K',
         '--ignore-config',
+        '--extractor-retries', '3',
         ...COOKIES_ARGS,
         '--embed-thumbnail', '--add-metadata',
         '--newline',
@@ -182,6 +184,13 @@ function runJob(jobId) {
 
   proc.on('close', (code) => {
     if (code !== 0) {
+      const isTransient = /page needs to be reloaded/i.test(errBuf);
+      if (isTransient && job.attemptsLeft > 0) {
+        job.attemptsLeft--;
+        sendEvent(job, { type: 'status', status: 'downloading', note: 'reintentando' });
+        runJob(jobId); // same slot, don't touch activeCount/finishJob
+        return;
+      }
       job.status = 'error';
       sendEvent(job, { type: 'error', message: 'La descarga fallo. Revisa el enlace.', detail: errBuf.slice(0, 400) });
       finishJob();
@@ -221,7 +230,7 @@ app.post('/api/download', (req, res) => {
     ? (String(quality) === 'best' || /^\d{2,4}$/.test(String(quality)) ? String(quality) : '720')
     : (['128', '192', '320'].includes(String(quality)) ? String(quality) : '192');
 
-  const job = { clients: [], status: 'queued', jobDir, files: [], url, mode: jobMode, quality: jobQuality, isPlaylist: Boolean(isPlaylist) };
+  const job = { clients: [], status: 'queued', jobDir, files: [], url, mode: jobMode, quality: jobQuality, isPlaylist: Boolean(isPlaylist), attemptsLeft: 2 };
   jobs.set(jobId, job);
   res.json({ jobId });
 
