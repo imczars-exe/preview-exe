@@ -251,7 +251,8 @@ async function addToQueue(url, isPlaylist) {
         statusEl.textContent = `en cola (#${ev_data.position})`;
       }
       if (ev_data.type === 'status' && ev_data.status === 'downloading') {
-        statusEl.textContent = 'descargando';
+        statusEl.textContent = ev_data.note === 'reintentando' ? 'reintentando...' : 'descargando';
+        if (ev_data.note === 'reintentando') barFill.classList.add('indeterminate');
       }
       if (ev_data.type === 'item') {
         titleEl.textContent = ev_data.name.replace(/\.(mp3|mp4)$/i, '');
