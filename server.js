@@ -15,10 +15,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 const DOWNLOADS_DIR = path.join(os.tmpdir(), 'meiker-downloader');
-const HISTORY_FILE = path.join(__dirname, 'data', 'history.json');
 fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
-fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
-if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, '[]');
 
 // yt-dlp binary: prefer one on PATH, fall back to a local copy dropped next to server.js
 const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
@@ -28,17 +25,17 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
 // In-memory job registry: jobId -> { clients: [res], status, ... }
 const jobs = new Map();
 
-function readHistory() {
-  try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); }
-  catch { return []; }
-}
-function writeHistory(list) {
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(list.slice(-200), null, 2));
-}
-function pushHistory(entry) {
-  const list = readHistory();
-  list.push(entry);
-  writeHistory(list);
+// Server-side files are cleaned up a few hours after finishing — this is a
+// public, no-login tool, so we don't keep strangers' files around forever.
+// (History itself lives in each visitor's own browser, not here — see app.js.)
+const CLEANUP_HOURS = 6;
+
+function scheduleCleanup(jobId) {
+  setTimeout(() => {
+    const job = jobs.get(jobId);
+    if (job) fs.rmSync(job.jobDir, { recursive: true, force: true });
+    jobs.delete(jobId);
+  }, CLEANUP_HOURS * 60 * 60 * 1000);
 }
 
 function sendEvent(job, data) {
@@ -180,16 +177,8 @@ function runJob(jobId) {
     job.files = files;
     job.status = 'done';
 
-    pushHistory({
-      id: jobId,
-      title: files.length === 1 ? files[0].replace(/\.(mp3|mp4)$/i, '') : `Playlist (${files.length} ${job.mode === 'video' ? 'videos' : 'pistas'})`,
-      count: files.length,
-      kind: job.mode,
-      quality: job.quality,
-      date: new Date().toISOString(),
-    });
-
     sendEvent(job, { type: 'done', files, isPlaylist: files.length > 1 });
+    scheduleCleanup(jobId);
     finishJob();
   });
 
@@ -265,11 +254,7 @@ app.get('/api/file/:jobId', (req, res) => {
   archive.finalize();
 });
 
-// --- History -------------------------------------------------------
-app.get('/api/history', (req, res) => {
-  res.json(readHistory().reverse());
-});
-
+// --- Direct re-download by job id (used by each browser's own local history) --
 app.get('/api/history/:jobId/file', (req, res) => {
   const jobDir = path.join(DOWNLOADS_DIR, req.params.jobId);
   if (!fs.existsSync(jobDir)) return res.status(404).end();

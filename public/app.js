@@ -203,6 +203,8 @@ urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') preview(); 
 
 // --- Queue -------------------------------------------------------------
 async function addToQueue(url, isPlaylist) {
+  const jobMode = mode;       // capture at enqueue time, not completion time
+  const jobQuality = quality; // (user might switch mode/quality while this runs)
   const emptyEl = queueList.querySelector('.queue-empty');
   if (emptyEl) emptyEl.remove();
 
@@ -226,7 +228,7 @@ async function addToQueue(url, isPlaylist) {
     const res = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, quality, mode, isPlaylist }),
+      body: JSON.stringify({ url, quality: jobQuality, mode: jobMode, isPlaylist }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -265,7 +267,15 @@ async function addToQueue(url, isPlaylist) {
         statusEl.classList.add('is-done');
         activeJobs.delete(data.jobId);
         queueCount.textContent = activeJobs.size;
-        loadHistory();
+        saveHistoryEntry({
+          id: data.jobId,
+          title: ev_data.isPlaylist
+            ? `Playlist (${ev_data.files.length} ${jobMode === 'video' ? 'videos' : 'pistas'})`
+            : titleEl.textContent,
+          kind: jobMode,
+          quality: jobQuality,
+          date: Date.now(),
+        });
         triggerDownload(`/api/file/${data.jobId}`);
         li.classList.add('is-leaving');
         setTimeout(() => {
@@ -298,15 +308,37 @@ async function addToQueue(url, isPlaylist) {
   }
 }
 
-async function loadHistory() {
-  const res = await fetch('/api/history');
-  const items = await res.json();
+// --- History (per-browser, stored locally — never sent to the server) --
+const HISTORY_KEY = 'meiker_history';
+const HISTORY_TTL_HOURS = 6; // matches the server's file cleanup window
+
+function getLocalHistory() {
+  let items = [];
+  try { items = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { items = []; }
+  const cutoff = Date.now() - HISTORY_TTL_HOURS * 60 * 60 * 1000;
+  const fresh = items.filter((it) => it.date > cutoff);
+  if (fresh.length !== items.length) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(fresh));
+  }
+  return fresh;
+}
+
+function saveHistoryEntry(entry) {
+  const items = getLocalHistory();
+  items.unshift(entry);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 30)));
+  renderHistory();
+}
+
+function renderHistory() {
+  const items = getLocalHistory();
   historyCount.textContent = items.length;
   if (!items.length) {
     historyList.innerHTML = '<li class="history-empty">nada por aquí todavía</li>';
     return;
   }
-  historyList.innerHTML = items.slice(0, 12).map((it) => `
+  historyList.innerHTML = items.map((it) => `
     <li class="history-item">
       <span class="h-title">${escapeHtml(it.title)}</span>
       <span style="display:flex;align-items:center;">
@@ -328,4 +360,4 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-loadHistory();
+renderHistory();
