@@ -22,6 +22,19 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
   ? path.join(__dirname, 'yt-dlp.exe')
   : 'yt-dlp';
 
+// Cookies file for authenticating yt-dlp as a real YouTube session — needed
+// because YouTube blocks datacenter IPs (Render/Railway/AWS/etc) with a
+// "Sign in to confirm you're not a bot" error otherwise. Point this at a
+// Render "Secret File" (or set YTDLP_COOKIES_FILE) — if it's not there,
+// we just skip cookies (fine for local dev on a home IP).
+const COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
+const COOKIES_ARGS = fs.existsSync(COOKIES_FILE) ? ['--cookies', COOKIES_FILE] : [];
+if (COOKIES_ARGS.length) {
+  console.log('yt-dlp: usando cookies de', COOKIES_FILE);
+} else {
+  console.log('yt-dlp: sin archivo de cookies (', COOKIES_FILE, 'no encontrado) — puede fallar en hosting cloud por bloqueo de bot.');
+}
+
 // In-memory job registry: jobId -> { clients: [res], status, ... }
 const jobs = new Map();
 
@@ -49,7 +62,7 @@ app.post('/api/preview', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Falta la URL.' });
 
-  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', url];
+  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, url];
   const proc = spawn(YTDLP_BIN, args);
   let out = '';
   let err = '';
@@ -125,6 +138,7 @@ function runJob(jobId) {
           : `bestvideo[height<=${job.quality}]+bestaudio/best[height<=${job.quality}]`,
         '--merge-output-format', 'mp4',
         '--ignore-config',
+        ...COOKIES_ARGS,
         '--add-metadata',
         '--newline',
         job.isPlaylist ? '--yes-playlist' : '--no-playlist',
@@ -135,6 +149,7 @@ function runJob(jobId) {
         '-x', '--audio-format', 'mp3',
         '--audio-quality', job.quality + 'K',
         '--ignore-config',
+        ...COOKIES_ARGS,
         '--embed-thumbnail', '--add-metadata',
         '--newline',
         job.isPlaylist ? '--yes-playlist' : '--no-playlist',
