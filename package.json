@@ -1,0 +1,14 @@
+{
+  "name": "meiker-web-downloader",
+  "version": "2.0.0",
+  "description": "Meiker - descargador de audio, version web",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "uuid": "^9.0.1",
+    "archiver": "^7.0.1"
+  }
+}

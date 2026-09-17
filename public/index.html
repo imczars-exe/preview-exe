@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>meiker</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=VT323&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- la "pantallita": pantalla del dispositivo siempre encendida, muestra estado idle hasta que resuelve una búsqueda -->
+  <section class="preview" id="previewCard">
+    <div class="screen-top">
+      <span class="screen-led" id="screenLed"></span>
+      <span class="screen-label">preview.exe</span>
+      <span class="screen-dots"><i></i><i></i><i></i></span>
+    </div>
+    <div class="screen-glass">
+      <div class="scanlines"></div>
+      <div class="screen-glow"></div>
+      <div class="preview-body" id="previewBody">
+        <p class="idle-msg">&gt; esperando enlace_</p>
+      </div>
+    </div>
+    <div class="preview-actions" id="previewActions"></div>
+  </section>
+
+  <section class="add-row">
+    <input type="text" id="urlInput" placeholder="pega un enlace..." autocomplete="off" spellcheck="false" autofocus>
+    <button class="btn btn-primary" id="goBtn">buscar</button>
+  </section>
+
+  <div class="row mode-row">
+    <span class="row-label">modo</span>
+    <div class="pillgroup" id="modeGroup">
+      <button class="pill active" data-m="audio">audio</button>
+      <button class="pill" data-m="video">video</button>
+    </div>
+  </div>
+
+  <div class="row quality-row">
+    <span class="row-label">calidad</span>
+    <div class="pillgroup" id="qualityGroup">
+      <button class="pill" data-q="128">128</button>
+      <button class="pill active" data-q="192">192</button>
+      <button class="pill" data-q="320">320</button>
+    </div>
+  </div>
+
+  <section class="queue">
+    <div class="section-head">
+      <h3>en cola</h3>
+      <span class="section-count" id="queueCount">0</span>
+    </div>
+    <ul id="queueList" class="queue-list">
+      <li class="queue-empty">nada descargando ahorita</li>
+    </ul>
+  </section>
+
+  <section class="history">
+    <div class="section-head">
+      <h3>historial</h3>
+      <span class="section-count" id="historyCount">0</span>
+    </div>
+    <ul id="historyList" class="history-list">
+      <li class="history-empty">nada por aquí todavía</li>
+    </ul>
+  </section>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
