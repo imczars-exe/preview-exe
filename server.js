@@ -30,7 +30,17 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
 const COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
 const COOKIES_ARGS = fs.existsSync(COOKIES_FILE) ? ['--cookies', COOKIES_FILE] : [];
 if (COOKIES_ARGS.length) {
-  console.log('yt-dlp: usando cookies de', COOKIES_FILE);
+  // Sanity-check the file itself: Netscape cookie format is tab-separated.
+  // Pasting into a web textarea (e.g. Render's Secret Files editor) can
+  // silently collapse tabs into spaces, which leaves the file "present" but
+  // with zero parseable cookies — same symptom as having no cookies at all.
+  const raw = fs.readFileSync(COOKIES_FILE, 'utf8');
+  const validLines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#') && l.includes('\t'));
+  const brokenLines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#') && !l.includes('\t'));
+  console.log(`yt-dlp: usando cookies de ${COOKIES_FILE} (${validLines.length} cookies con formato valido, ${brokenLines.length} lineas con formato roto)`);
+  if (validLines.length === 0) {
+    console.log('yt-dlp: ADVERTENCIA — el archivo de cookies no tiene ninguna linea con tabs. Probablemente se corrompio al pegarlo (los tabs se volvieron espacios). Sube el archivo de nuevo.');
+  }
 } else {
   console.log('yt-dlp: sin archivo de cookies (', COOKIES_FILE, 'no encontrado) — puede fallar en hosting cloud por bloqueo de bot.');
 }
