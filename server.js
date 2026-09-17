@@ -45,11 +45,13 @@ if (COOKIES_ARGS.length) {
   console.log('yt-dlp: sin archivo de cookies (', COOKIES_FILE, 'no encontrado) — puede fallar en hosting cloud por bloqueo de bot.');
 }
 
-// YouTube exige cada vez mas un "PO Token" ademas de la cookie; forzar
-// clientes distintos al "web" por defecto a veces lo evita porque no todos
-// los clientes lo piden con el mismo rigor. Esto es un parche que puede
-// dejar de funcionar cuando YouTube ajuste su deteccion.
-const EXTRACTOR_ARGS = ['--extractor-args', 'youtube:player_client=android,web_safari'];
+// PO Token: YouTube lo exige ahora ademas de la cookie para trafico de
+// datacenter. bgutil-pot corre como servidor local (ver start.sh) y este
+// plugin de yt-dlp lo consulta automaticamente para conseguir el token.
+const EXTRACTOR_ARGS = [
+  '--plugin-dirs', '/app/yt-dlp-plugins',
+  '--extractor-args', 'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416',
+];
 
 // In-memory job registry: jobId -> { clients: [res], status, ... }
 const jobs = new Map();
