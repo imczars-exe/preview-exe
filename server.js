@@ -84,6 +84,7 @@ app.post('/api/preview', (req, res) => {
   proc.on('close', (code) => {
     if (res.headersSent) return;
     if (code !== 0 || !out.trim()) {
+      console.error(`yt-dlp preview fallo (code ${code}) para ${url}:\n${err.slice(0, 1000)}`);
       return res.status(422).json({ error: 'No se pudo leer ese enlace. Revisa que sea correcto.' , detail: err.slice(0, 300)});
     }
     const lines = out.trim().split('\n').filter(Boolean).map((l) => {
@@ -202,6 +203,7 @@ function runJob(jobId) {
         return;
       }
       job.status = 'error';
+      console.error(`yt-dlp download fallo (code ${code}) para ${job.url}:\n${errBuf.slice(0, 1000)}`);
       sendEvent(job, { type: 'error', message: 'La descarga fallo. Revisa el enlace.', detail: errBuf.slice(0, 400) });
       finishJob();
       return;
