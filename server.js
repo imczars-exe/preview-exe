@@ -45,6 +45,12 @@ if (COOKIES_ARGS.length) {
   console.log('yt-dlp: sin archivo de cookies (', COOKIES_FILE, 'no encontrado) — puede fallar en hosting cloud por bloqueo de bot.');
 }
 
+// YouTube exige cada vez mas un "PO Token" ademas de la cookie; forzar
+// clientes distintos al "web" por defecto a veces lo evita porque no todos
+// los clientes lo piden con el mismo rigor. Esto es un parche que puede
+// dejar de funcionar cuando YouTube ajuste su deteccion.
+const EXTRACTOR_ARGS = ['--extractor-args', 'youtube:player_client=android,web_safari'];
+
 // In-memory job registry: jobId -> { clients: [res], status, ... }
 const jobs = new Map();
 
@@ -72,7 +78,7 @@ app.post('/api/preview', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Falta la URL.' });
 
-  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, url];
+  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
   const proc = spawn(YTDLP_BIN, args);
   let out = '';
   let err = '';
@@ -151,6 +157,7 @@ function runJob(jobId) {
         '--ignore-config',
         '--extractor-retries', '3',
         ...COOKIES_ARGS,
+        ...EXTRACTOR_ARGS,
         '--add-metadata',
         '--newline',
         job.isPlaylist ? '--yes-playlist' : '--no-playlist',
@@ -163,6 +170,7 @@ function runJob(jobId) {
         '--ignore-config',
         '--extractor-retries', '3',
         ...COOKIES_ARGS,
+        ...EXTRACTOR_ARGS,
         '--embed-thumbnail', '--add-metadata',
         '--newline',
         job.isPlaylist ? '--yes-playlist' : '--no-playlist',
