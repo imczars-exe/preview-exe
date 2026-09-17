@@ -80,7 +80,7 @@ app.post('/api/preview', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Falta la URL.' });
 
-  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
+  const args = ['-j', '-v', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
   const proc = spawn(YTDLP_BIN, args);
   let out = '';
   let err = '';
@@ -92,7 +92,7 @@ app.post('/api/preview', (req, res) => {
   proc.on('close', (code) => {
     if (res.headersSent) return;
     if (code !== 0 || !out.trim()) {
-      console.error(`yt-dlp preview fallo (code ${code}) para ${url}:\n${err.slice(0, 1000)}`);
+      console.error(`yt-dlp preview fallo (code ${code}) para ${url}:\n${err.slice(0, 4000)}`);
       return res.status(422).json({ error: 'No se pudo leer ese enlace. Revisa que sea correcto.' , detail: err.slice(0, 300)});
     }
     const lines = out.trim().split('\n').filter(Boolean).map((l) => {
