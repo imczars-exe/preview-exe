@@ -91,7 +91,9 @@ async function preview() {
 
     if (!res.ok) {
       previewCard.classList.remove('is-loading');
-      previewBody.innerHTML = `<span class="preview-error">&gt; ${data.error || 'no se pudo leer ese enlace'}</span>`;
+      previewBody.innerHTML = `
+        <span class="preview-error">&gt; ${data.error || 'no se pudo leer ese enlace'}</span>
+        ${data.detail ? `<span class="preview-error" style="display:block;font-size:10px;opacity:.7;margin-top:6px;">${escapeHtml(data.detail.slice(0, 200))}</span>` : ''}`;
       return;
     }
 
