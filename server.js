@@ -91,6 +91,9 @@ app.post('/api/preview', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Falta la URL.' });
 
+  const t0 = Date.now();
+  console.log(`[preview] pedido recibido para ${url}`);
+
   const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
   const proc = spawn(YTDLP_BIN, args);
   let out = '';
@@ -101,6 +104,7 @@ app.post('/api/preview', (req, res) => {
   proc.stdout.on('data', (d) => (out += d));
   proc.stderr.on('data', (d) => (err += d));
   proc.on('close', (code) => {
+    console.log(`[preview] yt-dlp termino en ${Date.now() - t0}ms (code ${code}) para ${url}`);
     if (res.headersSent) return;
     if (code !== 0 || !out.trim()) {
       console.error(`yt-dlp preview fallo (code ${code}) para ${url}:\n${err.slice(0, 4000)}`);
@@ -154,6 +158,8 @@ function runJob(jobId) {
   const job = jobs.get(jobId);
   if (!job) return;
   job.status = 'downloading';
+  job._t0 = job._t0 || Date.now();
+  console.log(`[download ${jobId}] arrancando (modo ${job.mode}) para ${job.url}`);
   sendEvent(job, { type: 'status', status: 'downloading' });
 
   const outTemplate = path.join(
@@ -215,20 +221,23 @@ function runJob(jobId) {
   proc.stderr.on('data', (d) => (errBuf += d));
 
   proc.on('close', (code) => {
+    const elapsed = Date.now() - job._t0;
     if (code !== 0) {
       const isTransient = /page needs to be reloaded/i.test(errBuf);
       if (isTransient && job.attemptsLeft > 0) {
         job.attemptsLeft--;
+        console.log(`[download ${jobId}] reintentando tras ${elapsed}ms (page needs to be reloaded)`);
         sendEvent(job, { type: 'status', status: 'downloading', note: 'reintentando' });
         runJob(jobId); // same slot, don't touch activeCount/finishJob
         return;
       }
       job.status = 'error';
-      console.error(`yt-dlp download fallo (code ${code}) para ${job.url}:\n${errBuf.slice(0, 1000)}`);
+      console.error(`[download ${jobId}] fallo tras ${elapsed}ms (code ${code}) para ${job.url}:\n${errBuf.slice(0, 1000)}`);
       sendEvent(job, { type: 'error', message: 'La descarga fallo. Revisa el enlace.', detail: errBuf.slice(0, 400) });
       finishJob();
       return;
     }
+    console.log(`[download ${jobId}] listo en ${elapsed}ms`);
     const ext = job.mode === 'video' ? 'mp4' : 'mp3';
     const files = fs.readdirSync(job.jobDir).filter((f) => f.toLowerCase().endsWith('.' + ext));
     job.files = files;
