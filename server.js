@@ -80,7 +80,7 @@ app.post('/api/preview', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'Falta la URL.' });
 
-  const args = ['-j', '-v', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
+  const args = ['-j', '--no-warnings', '--flat-playlist', '--ignore-config', ...COOKIES_ARGS, ...EXTRACTOR_ARGS, url];
   const proc = spawn(YTDLP_BIN, args);
   let out = '';
   let err = '';
