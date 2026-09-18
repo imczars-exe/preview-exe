@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res) => res.set('Cache-Control', 'no-store'),
 }));
 
-const DOWNLOADS_DIR = path.join(os.tmpdir(), 'meiker-downloader');
+const DOWNLOADS_DIR = path.join(os.tmpdir(), 'preview-exe');
 fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
 
 // yt-dlp binary: prefer one on PATH, fall back to a local copy dropped next to server.js
@@ -35,7 +35,7 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
 // fine. So: copy the secret into a writable temp file once at startup, and
 // point yt-dlp at that copy instead.
 const COOKIES_SECRET_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
-const COOKIES_FILE = path.join(os.tmpdir(), 'meiker-cookies.txt');
+const COOKIES_FILE = path.join(os.tmpdir(), 'preview-exe-cookies.txt');
 if (fs.existsSync(COOKIES_SECRET_FILE)) {
   fs.copyFileSync(COOKIES_SECRET_FILE, COOKIES_FILE);
 }
@@ -343,5 +343,5 @@ app.get('/api/history/:jobId/file', (req, res) => {
 
 const PORT = process.env.PORT || 3939;
 app.listen(PORT, () => {
-  console.log(`meiker corriendo en http://localhost:${PORT}`);
+  console.log(`preview-exe corriendo en http://localhost:${PORT}`);
 });

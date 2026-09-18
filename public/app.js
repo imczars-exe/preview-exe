@@ -312,7 +312,7 @@ async function addToQueue(url, isPlaylist) {
 }
 
 // --- History (per-browser, stored locally — never sent to the server) --
-const HISTORY_KEY = 'meiker_history';
+const HISTORY_KEY = 'preview-exe_history';
 const HISTORY_TTL_HOURS = 6; // matches the server's file cleanup window
 
 function getLocalHistory() {
