@@ -26,19 +26,6 @@ RUN curl -L https://github.com/denoland/deno/releases/latest/download/deno-x86_6
     && chmod +x /usr/local/bin/deno \
     && rm /tmp/deno.zip
 
-# bgutil-pot: genera el PO Token que YouTube exige ahora ademas de las
-# cookies para trafico de datacenter. Es un binario Rust standalone que
-# corre como servidor HTTP local (puerto 4416); el plugin de yt-dlp lo
-# consulta automaticamente. https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs
-RUN curl -L https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-linux-x86_64 \
-      -o /usr/local/bin/bgutil-pot \
-    && chmod +x /usr/local/bin/bgutil-pot \
-    && mkdir -p /app/yt-dlp-plugins \
-    && curl -L https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip \
-      -o /tmp/bgutil-plugin.zip \
-    && unzip -q /tmp/bgutil-plugin.zip -d /app/yt-dlp-plugins \
-    && rm /tmp/bgutil-plugin.zip
-
 WORKDIR /app
 
 COPY package*.json ./

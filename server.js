@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res) => res.set('Cache-Control', 'no-store'),
 }));
 
-const DOWNLOADS_DIR = path.join(os.tmpdir(), 'preview-exe');
+const DOWNLOADS_DIR = path.join(os.tmpdir(), 'meiker-downloader');
 fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
 
 // yt-dlp binary: prefer one on PATH, fall back to a local copy dropped next to server.js
@@ -35,7 +35,7 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
 // fine. So: copy the secret into a writable temp file once at startup, and
 // point yt-dlp at that copy instead.
 const COOKIES_SECRET_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
-const COOKIES_FILE = path.join(os.tmpdir(), 'preview-exe-cookies.txt');
+const COOKIES_FILE = path.join(os.tmpdir(), 'meiker-cookies.txt');
 if (fs.existsSync(COOKIES_SECRET_FILE)) {
   fs.copyFileSync(COOKIES_SECRET_FILE, COOKIES_FILE);
 }
@@ -56,18 +56,10 @@ if (COOKIES_ARGS.length) {
   console.log('yt-dlp: sin archivo de cookies (', COOKIES_FILE, 'no encontrado) — puede fallar en hosting cloud por bloqueo de bot.');
 }
 
-// PO Token: YouTube lo exige ahora ademas de la cookie para trafico de
-// datacenter. bgutil-pot corre como servidor local (ver start.sh) y este
-// plugin de yt-dlp lo consulta automaticamente para conseguir el token.
-//
 // player_client=web: por defecto yt-dlp prueba primero web_embedded y
-// tv_downgraded, que en este servidor siempre devuelven LOGIN_REQUIRED (2
-// round-trips desperdiciados por request) antes de caer en "web", que es
-// el que si funciona con nuestras cookies+Deno+PO token. Forzarlo ahorra
-// ese tiempo en cada busqueda y descarga.
+// tv_downgraded, que en este servidor siempre devuelven LOGIN_REQUIRED
+// antes de caer en "web" (el que funciona con nuestras cookies+Deno).
 const EXTRACTOR_ARGS = [
-  '--plugin-dirs', '/app/yt-dlp-plugins',
-  '--extractor-args', 'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416',
   '--extractor-args', 'youtube:player_client=web',
 ];
 
@@ -343,5 +335,5 @@ app.get('/api/history/:jobId/file', (req, res) => {
 
 const PORT = process.env.PORT || 3939;
 app.listen(PORT, () => {
-  console.log(`preview-exe corriendo en http://localhost:${PORT}`);
+  console.log(`meiker corriendo en http://localhost:${PORT}`);
 });
