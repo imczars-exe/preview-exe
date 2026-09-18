@@ -27,7 +27,18 @@ const YTDLP_BIN = fs.existsSync(path.join(__dirname, 'yt-dlp.exe'))
 // "Sign in to confirm you're not a bot" error otherwise. Point this at a
 // Render "Secret File" (or set YTDLP_COOKIES_FILE) — if it's not there,
 // we just skip cookies (fine for local dev on a home IP).
-const COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
+//
+// yt-dlp tries to WRITE BACK updated cookies after each run (YouTube
+// rotates session cookies), so we can't point it directly at Render's
+// Secret File — those are mounted read-only and yt-dlp exits with code 1
+// ("OSError: Read-only file system") even when the actual download worked
+// fine. So: copy the secret into a writable temp file once at startup, and
+// point yt-dlp at that copy instead.
+const COOKIES_SECRET_FILE = process.env.YTDLP_COOKIES_FILE || '/etc/secrets/cookies.txt';
+const COOKIES_FILE = path.join(os.tmpdir(), 'meiker-cookies.txt');
+if (fs.existsSync(COOKIES_SECRET_FILE)) {
+  fs.copyFileSync(COOKIES_SECRET_FILE, COOKIES_FILE);
+}
 const COOKIES_ARGS = fs.existsSync(COOKIES_FILE) ? ['--cookies', COOKIES_FILE] : [];
 if (COOKIES_ARGS.length) {
   // Sanity-check the file itself: Netscape cookie format is tab-separated.
