@@ -59,9 +59,16 @@ if (COOKIES_ARGS.length) {
 // PO Token: YouTube lo exige ahora ademas de la cookie para trafico de
 // datacenter. bgutil-pot corre como servidor local (ver start.sh) y este
 // plugin de yt-dlp lo consulta automaticamente para conseguir el token.
+//
+// player_client=web: por defecto yt-dlp prueba primero web_embedded y
+// tv_downgraded, que en este servidor siempre devuelven LOGIN_REQUIRED (2
+// round-trips desperdiciados por request) antes de caer en "web", que es
+// el que si funciona con nuestras cookies+Deno+PO token. Forzarlo ahorra
+// ese tiempo en cada busqueda y descarga.
 const EXTRACTOR_ARGS = [
   '--plugin-dirs', '/app/yt-dlp-plugins',
   '--extractor-args', 'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416',
+  '--extractor-args', 'youtube:player_client=web',
 ];
 
 // In-memory job registry: jobId -> { clients: [res], status, ... }
